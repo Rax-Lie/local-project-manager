@@ -1,0 +1,15 @@
+# 讨论、评审和待审批计划按项目约定保留在本地，不纳入版本控制。
+discuss/
+
+# JavaScript / VS Code 扩展构建产物。
+node_modules/
+.vscode-test/
+coverage/
+*.vsix
+
+# 项目管理插件在被管理根目录创建的本地状态。
+.pm/
+
+# 操作系统文件。
+Thumbs.db
+.DS_Store
