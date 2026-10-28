@@ -31,6 +31,7 @@ async function applyFileTemplateFlow(deps, item) {
   const listed = await cli.request('template.list', { rootUri, rootId });
   const options = [];
   for (const template of listed.templates || []) {
+    if (template.enabled === false) continue;
     for (const markdown of template.markdownTemplates || []) {
       options.push({
         label: `${template.displayName} / ${markdown.displayName || markdown.targetPath}`,

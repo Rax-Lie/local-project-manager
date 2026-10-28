@@ -13,7 +13,7 @@ const { verifyPlan } = require('../domain/plan');
 const { createOperationRecord } = require('../domain/operation');
 const { withRootContext, discoverTemplates, findTemplate } = require('./context');
 const { normalizeCreateInput } = require('./project-plan');
-const { assertRootId } = require('./template-service');
+const { assertRootId, assertTemplateEnabled } = require('./template-service');
 
 const PROJECT_ID_PATTERN = /^prj_[A-Za-z0-9-]{6,128}$/;
 
@@ -75,6 +75,7 @@ async function executeProjectCreation(payload) {
     }
 
     await context.templateIndex.sync(context.config.rootId, discovered.entries);
+    await assertTemplateEnabled(context, template.id);
     await assertLocationFree(context, details.relativePath, details.slug);
     const record = {
       projectId: details.projectId,

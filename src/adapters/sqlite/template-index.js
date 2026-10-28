@@ -27,7 +27,6 @@ class TemplateIndex {
            ON CONFLICT(root_id, id) DO UPDATE SET
              revision = excluded.revision,
              relative_path = excluded.relative_path,
-             enabled = 1,
              updated_at = excluded.updated_at`,
           [rootId, template.id, template.revision, relativePath, now]
         );
@@ -53,6 +52,49 @@ class TemplateIndex {
       'SELECT id, revision, relative_path, updated_at FROM templates WHERE root_id = ? AND enabled = 1 ORDER BY id ASC',
       [rootId]
     );
+  }
+
+  /**
+   * @param {string} rootId
+   * @param {string} templateId
+   * @returns {Promise<object|null>}
+   */
+  async get(rootId, templateId) {
+    const row = this.db.get(
+      'SELECT id, revision, relative_path, enabled, updated_at FROM templates WHERE root_id = ? AND id = ?',
+      [rootId, templateId]
+    );
+    return row ? { ...row, enabled: row.enabled === 1 } : null;
+  }
+
+  /**
+   * @param {string} rootId
+   * @returns {Promise<object[]>}
+   */
+  async list(rootId) {
+    const rows = this.db.all(
+      'SELECT id, revision, relative_path, enabled, updated_at FROM templates WHERE root_id = ? ORDER BY id ASC',
+      [rootId]
+    );
+    return rows.map((row) => ({ ...row, enabled: row.enabled === 1 }));
+  }
+
+  /**
+   * @param {string} rootId
+   * @param {string} templateId
+   * @param {number} expectedRevision
+   * @param {boolean} enabled
+   * @returns {Promise<object>}
+   */
+  async setEnabled(rootId, templateId, expectedRevision, enabled) {
+    this.db.run(
+      `UPDATE templates SET enabled = ?, updated_at = ?
+       WHERE root_id = ? AND id = ? AND revision = ?`,
+      [enabled ? 1 : 0, new Date().toISOString(), rootId, templateId, expectedRevision]
+    );
+    const current = await this.get(rootId, templateId);
+    if (!current || current.revision !== expectedRevision) return null;
+    return current;
   }
 }
 

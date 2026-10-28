@@ -12,7 +12,7 @@ const { normalizeFieldValues } = require('../domain/field-values');
 const { partitionById } = require('../domain/root-config');
 const { createPlan } = require('../domain/plan');
 const { withRootContext, discoverTemplates, findTemplate } = require('./context');
-const { assertRootId } = require('./template-service');
+const { assertRootId, assertTemplateEnabled } = require('./template-service');
 
 const CREATE_INPUT_KEYS = ['rootUri', 'rootId', 'templateId', 'expectedTemplateRevision', 'displayName', 'fieldValues'];
 const TEMPLATE_ID_PATTERN = /^[a-z][a-z0-9-]{1,63}$/;
@@ -104,7 +104,9 @@ async function planProjectCreation(payload) {
   return withRootContext(input.rootUri, async (context) => {
     assertRootId(context.config.rootId, input.rootId);
     const discovered = await discoverTemplates(context.fs);
+    await context.templateIndex.sync(context.config.rootId, discovered.entries);
     const entry = findTemplate(discovered.entries, input.templateId);
+    await assertTemplateEnabled(context, input.templateId);
     const template = entry.template;
     if (template.revision !== input.expectedTemplateRevision) {
       throw new AppError(

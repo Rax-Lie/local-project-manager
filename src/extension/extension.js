@@ -17,6 +17,7 @@ const {
 } = require('./ui/maintenance-flow');
 const { applyFileTemplateFlow } = require('./ui/file-flow');
 const { searchProjectsFlow, copyProjectInfoFlow } = require('./ui/search-flow');
+const { manageTemplatesFlow, saveTemplateDraftFlow } = require('./ui/template-flow');
 
 /**
  * @param {import('vscode').ExtensionContext} context
@@ -77,6 +78,8 @@ function activate(context) {
   register('projectManager.initializeRoot', () => initializeRootFlow(flows));
   register('projectManager.createProject', () => createProjectFlow(flows));
   register('projectManager.searchProjects', () => searchProjectsFlow(flows));
+  register('projectManager.manageTemplates', () => manageTemplatesFlow(flows));
+  register('projectManager.saveTemplateDraft', () => saveTemplateDraftFlow(flows));
   register('projectManager.applyFileTemplate', (item) => applyFileTemplateFlow(flows, item));
   register('projectManager.syncPending', () => syncPendingFlow(flows));
   register('projectManager.recoverOperations', () => recoverOperationsFlow(flows));

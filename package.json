@@ -27,6 +27,8 @@
     "onView:projectManager.projects",
     "onCommand:projectManager.initializeRoot",
     "onCommand:projectManager.createProject",
+    "onCommand:projectManager.manageTemplates",
+    "onCommand:projectManager.saveTemplateDraft",
     "onCommand:projectManager.searchProjects",
     "onCommand:projectManager.applyFileTemplate",
     "onCommand:projectManager.syncPending",
@@ -56,6 +58,17 @@
         "title": "新建项目",
         "category": "项目管理",
         "icon": "$(add)"
+      },
+      {
+        "command": "projectManager.manageTemplates",
+        "title": "管理项目模板",
+        "category": "项目管理",
+        "icon": "$(symbol-structure)"
+      },
+      {
+        "command": "projectManager.saveTemplateDraft",
+        "title": "保存模板草稿",
+        "category": "项目管理"
       },
       {
         "command": "projectManager.searchProjects",
@@ -140,6 +153,11 @@
           "command": "projectManager.refresh",
           "when": "view == projectManager.projects",
           "group": "navigation@3"
+        },
+        {
+          "command": "projectManager.manageTemplates",
+          "when": "view == projectManager.projects",
+          "group": "navigation@4"
         }
       ],
       "view/item/context": [

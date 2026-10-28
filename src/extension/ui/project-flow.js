@@ -20,7 +20,8 @@ async function createProjectFlow(deps) {
   const rootId = root.inspection.config.rootId;
 
   const listed = await cli.request('template.list', { rootUri, rootId });
-  const templates = (listed.templates || []).filter((template) => Array.isArray(template.fields));
+  const templates = (listed.templates || []).filter((template) => template.enabled !== false
+    && Array.isArray(template.fields));
   if (templates.length === 0) {
     throw new AppError(ERROR_CODES.ROOT_NOT_INITIALIZED, '管理根没有可用模板，请检查 .pm/templates。');
   }

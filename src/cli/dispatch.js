@@ -11,6 +11,12 @@ const {
   validateTemplateOperation
 } = require('../application/template-service');
 const {
+  createTemplate,
+  updateTemplate,
+  deleteTemplate,
+  setTemplateEnabled
+} = require('../application/template-management-service');
+const {
   planProjectCreation
 } = require('../application/project-plan');
 const {
@@ -53,6 +59,14 @@ async function dispatch(operation, payload) {
       return listTemplates(payload);
     case 'template.validate':
       return validateTemplateOperation(payload);
+    case 'template.create':
+      return createTemplate(payload);
+    case 'template.update':
+      return updateTemplate(payload);
+    case 'template.delete':
+      return deleteTemplate(payload);
+    case 'template.setEnabled':
+      return setTemplateEnabled(payload);
     case 'project.create.plan':
       return planProjectCreation(payload);
     case 'project.create.execute':

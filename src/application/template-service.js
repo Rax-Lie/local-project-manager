@@ -16,11 +16,14 @@ async function listTemplates(payload) {
     assertRootId(context.config.rootId, payload.rootId);
     const discovered = await discoverTemplates(context.fs);
     await context.templateIndex.sync(context.config.rootId, discovered.entries);
+    const indexed = await context.templateIndex.list(context.config.rootId);
+    const enabledById = new Map(indexed.map((item) => [item.id, item.enabled]));
     return {
       rootId: context.config.rootId,
       templates: discovered.entries.map((entry) => ({
         ...entry.template,
-        relativePath: entry.relativePath
+        relativePath: entry.relativePath,
+        enabled: enabledById.get(entry.template.id) === true
       })),
       diagnostics: discovered.diagnostics
     };
@@ -71,6 +74,17 @@ function assertRootId(actual, expected) {
 }
 
 /**
+ * @param {object} context
+ * @param {string} templateId
+ */
+async function assertTemplateEnabled(context, templateId) {
+  const indexed = await context.templateIndex.get(context.config.rootId, templateId);
+  if (!indexed?.enabled) {
+    throw new AppError(ERROR_CODES.CONFLICT, `模板已停用，不能用于新操作：${templateId}`);
+  }
+}
+
+/**
  * @param {unknown} payload
  * @param {string[]} allowed
  * @param {string} label
@@ -89,5 +103,7 @@ function assertPayload(payload, allowed, label) {
 module.exports = {
   listTemplates,
   validateTemplateOperation,
-  assertRootId
+  assertRootId,
+  assertTemplateEnabled,
+  assertPayload
 };

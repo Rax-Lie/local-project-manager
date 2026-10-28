@@ -10,7 +10,7 @@ const { renderMarkdown, markdownTemplatesOf } = require('../domain/template');
 const { createPlan, verifyPlan } = require('../domain/plan');
 const { createOperationRecord } = require('../domain/operation');
 const { withRootContext, discoverTemplates, findTemplate } = require('./context');
-const { assertRootId } = require('./template-service');
+const { assertRootId, assertTemplateEnabled } = require('./template-service');
 
 const INPUT_KEYS = ['rootUri', 'rootId', 'projectId', 'templateId', 'expectedTemplateRevision', 'markdownId'];
 const OPERATION_ID_PATTERN = /^op_[A-Za-z0-9-]{6,128}$/;
@@ -65,7 +65,9 @@ async function planFileTemplate(payload) {
       throw new AppError(ERROR_CODES.CONFLICT, '归档项目不能写入新文件。');
     }
     const discovered = await discoverTemplates(context.fs);
+    await context.templateIndex.sync(context.config.rootId, discovered.entries);
     const entry = findTemplate(discovered.entries, input.templateId);
+    await assertTemplateEnabled(context, input.templateId);
     const template = entry.template;
     if (template.revision !== input.expectedTemplateRevision) {
       throw new AppError(ERROR_CODES.CONFLICT, `模板版本已变化，当前为 ${template.revision}。`);
@@ -186,6 +188,8 @@ async function executeFileTemplate(payload) {
 
     const existing = await context.journal.get(plan.operationId);
     if (existing) return handleExistingFileOperation(context, plan, existing, targetPath);
+    await context.templateIndex.sync(context.config.rootId, discovered.entries);
+    await assertTemplateEnabled(context, input.templateId);
     if (plan.details?.blocking) {
       throw new AppError(ERROR_CODES.CONFLICT, '目标文件已存在，写入已阻止。');
     }
