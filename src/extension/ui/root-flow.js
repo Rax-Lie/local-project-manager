@@ -31,6 +31,17 @@ async function initializeRootFlow(deps) {
   const rootUri = picked[0].toString();
   const inspection = await cli.request('root.inspect', { rootUri });
 
+  if (inspection.partial) {
+    await registry.add(rootUri);
+    await provider.refresh();
+  }
+  if (inspection.bootstrapOperationId) {
+    throw new AppError(
+      ERROR_CODES.RECOVERY_REQUIRED,
+      '检测到未完成的根初始化，管理根已加入列表，请运行“检查未完成操作”恢复。'
+    );
+  }
+
   if (inspection.initialized && inspection.partial) {
     throw new AppError(
       ERROR_CODES.RECOVERY_REQUIRED,
@@ -83,12 +94,12 @@ async function initializeRootFlow(deps) {
   const plan = await cli.request('root.initialize.plan', input);
   if (!(await confirmPlan(vscode, plan, { title: '确认初始化项目管理根？' }))) return;
 
+  await registry.add(pathToFileUri(inspection.rootPath));
   const result = await withProgress(vscode, '正在初始化管理根…', (token) => cli.request(
     'root.initialize.execute',
     { input, plan },
     { token }
   ));
-  await registry.add(pathToFileUri(inspection.rootPath));
   await provider.refresh();
   const message = result.warnings?.length > 0
     ? `管理根已就绪（${result.warnings[0].message}）`

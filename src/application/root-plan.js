@@ -4,6 +4,7 @@ const { AppError } = require('../shared/errors');
 const {
   ERROR_CODES,
   PM_DIR,
+  ROOT_INIT_MARKER,
   BACKUPS_DIR,
   MAX_DISPLAY_NAME_CHARS
 } = require('../shared/constants');
@@ -160,6 +161,7 @@ async function planRootInitialization(input) {
     message: '所选根目录不是空目录。为保护已有数据，初始化不会执行；请选择空目录。'
   }] : [];
   const changedPaths = [
+    ROOT_INIT_MARKER,
     PM_DIR,
     CONFIG_RELATIVE_PATH,
     DB_RELATIVE_PATH,
@@ -189,7 +191,7 @@ async function planRootInitialization(input) {
         `目标工作区：${fileUriToPath(normalized.workspaceUri)}`,
         `目录分区：${normalized.partitions.map((item) => `${item.name} (${item.relativePath})`).join('、')}`,
         `内置模板：${DEFAULT_TEMPLATES.map((item) => item.displayName).join('、')}`,
-        '将创建 .pm/pm.json、.pm/pm.sqlite、模板目录、备份目录和分区目录。'
+        `将先创建 ${ROOT_INIT_MARKER} 保存恢复信息，初始化完成后自动删除；随后创建 .pm 配置、数据库、模板和分区目录。`
       ],
       warnings
     },

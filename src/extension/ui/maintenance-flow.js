@@ -28,7 +28,7 @@ async function archiveProjectFlow(deps, item) {
     throw new AppError(ERROR_CODES.CONFLICT, '只有活动项目可以归档。');
   }
   const rootUri = root.rootUri;
-  const rootId = root.inspection.config.rootId;
+  const rootId = root.inspection.config?.rootId;
   const input = { rootUri, rootId, projectId: project.projectId, targetPartitionId: 'archive' };
   const plan = await cli.request('project.archive.plan', input);
   if (!(await confirmPlan(vscode, plan, {

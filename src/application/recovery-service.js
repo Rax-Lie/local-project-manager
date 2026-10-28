@@ -8,7 +8,7 @@ const { nowIso } = require('../shared/ids');
 const { withRootContext } = require('./context');
 const { assertRootId } = require('./template-service');
 const { inspectRoot } = require('./root-inspect');
-
+const { recoverRootBootstrap } = require('./root-bootstrap-recovery');
 /**
  * @param {unknown} payload
  * @returns {Promise<object>}
@@ -25,6 +25,10 @@ async function inspectRecovery(payload) {
   }
   const rootUri = normalizeFileUri(payload.rootUri);
   const apply = payload.apply === true;
+  const bootstrapRecovery = await recoverRootBootstrap({
+    rootUri, rootId: payload.rootId, operationId: payload.operationId, apply
+  });
+  if (bootstrapRecovery) return bootstrapRecovery;
   const inspection = await inspectRoot({ rootUri });
   if (!inspection.initialized || !inspection.database.exists) {
     return {
@@ -64,7 +68,6 @@ async function inspectRecovery(payload) {
     };
   });
 }
-
 /**
  * @param {object} context
  * @param {object} operation
@@ -287,11 +290,9 @@ async function reportRootInit(context, operation, report, apply) {
     report.message = '初始化不完整，需要人工检查，未自动覆盖用户内容。';
   }
 }
-
 function check(name, ok, message) {
   return { name, ok, message };
 }
-
 module.exports = {
   inspectRecovery
 };

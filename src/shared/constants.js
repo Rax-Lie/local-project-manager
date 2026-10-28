@@ -63,6 +63,7 @@ const DB_FILE = 'pm.sqlite';
 const SNAPSHOT_FILE = '.pm-project.json';
 const TEMPLATES_DIR = 'templates';
 const BACKUPS_DIR = 'backups';
+const ROOT_INIT_MARKER = '.pm-root-initialize.json';
 
 const DEFAULT_PARTITIONS = Object.freeze([
   Object.freeze({ id: 'inbox', name: '收件箱', relativePath: 'inbox' }),
@@ -113,6 +114,7 @@ module.exports = {
   SNAPSHOT_FILE,
   TEMPLATES_DIR,
   BACKUPS_DIR,
+  ROOT_INIT_MARKER,
   DEFAULT_PARTITIONS,
   DEFAULT_SLUG_RULES,
   FIELD_TYPES,

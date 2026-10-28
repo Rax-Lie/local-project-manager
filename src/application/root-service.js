@@ -1,31 +1,17 @@
 'use strict';
 
-const path = require('node:path');
 const { AppError, normalizeError } = require('../shared/errors');
-const {
-  ERROR_CODES,
-  PM_DIR,
-  TEMPLATES_DIR,
-  BACKUPS_DIR,
-  DB_FILE
-} = require('../shared/constants');
+const { ERROR_CODES } = require('../shared/constants');
 const { isPlainObject } = require('../shared/json');
 const { fileUriToPath, sameFileUri } = require('../shared/paths');
-const { createRootConfig, serializeRootConfig } = require('../domain/root-config');
+const { createRootConfig } = require('../domain/root-config');
 const { verifyPlan } = require('../domain/plan');
-const { createOperationRecord } = require('../domain/operation');
 const { SafeFileSystem } = require('../adapters/filesystem/safe-fs');
-const { SqliteDatabase } = require('../adapters/sqlite/database');
-const { OperationJournal } = require('../adapters/sqlite/operation-journal');
-const { TemplateIndex } = require('../adapters/sqlite/template-index');
 const { DEFAULT_TEMPLATES } = require('./defaults');
+const { serializeTemplate, openRootContext } = require('./context');
 const { inspectRoot } = require('./root-inspect');
-const {
-  CONFIG_RELATIVE_PATH,
-  discoverTemplates,
-  serializeTemplate,
-  openRootContext
-} = require('./context');
+const { createRootBootstrap, writeRootBootstrap, crashAtBootstrapPoint } = require('./root-bootstrap');
+const { applyRootBootstrap } = require('./root-bootstrap-apply');
 const {
   normalizeInitializationInput,
   rootIdFromPlan,
@@ -106,74 +92,24 @@ async function executeRootInitialization(payload) {
     partitions: normalized.partitions,
     slugRules: normalized.slugRules
   });
+  const templateFiles = DEFAULT_TEMPLATES.map((template) => serializeTemplate(template));
   const fsPort = new SafeFileSystem(fileUriToPath(normalized.rootUri));
-  const dbPath = path.join(fileUriToPath(normalized.rootUri), PM_DIR, DB_FILE);
-  let db;
-  let journal;
-  let started = false;
+  const bootstrap = createRootBootstrap({
+    operationId: payload.plan.operationId,
+    rootId,
+    input: normalized,
+    config,
+    templateFiles,
+    changedPaths: payload.plan.details?.changedPaths || []
+  });
   try {
-    await fsPort.createDirectoryExclusive(PM_DIR);
-    db = new SqliteDatabase(dbPath);
-    await db.open();
-    journal = new OperationJournal(db);
-    await journal.begin(createOperationRecord({
-      operationId: payload.plan.operationId,
-      rootId,
-      kind: 'root.initialize',
-      state: 'applying',
-      payload: { input: normalized, planId: payload.plan.planId },
-      completedSteps: []
-    }));
-    started = true;
-    await fsPort.createDirectoryExclusive(`${PM_DIR}/${TEMPLATES_DIR}`);
-    await fsPort.createDirectoryExclusive(`${PM_DIR}/${BACKUPS_DIR}`);
-    for (const partition of config.partitions) {
-      await fsPort.createDirectoryTree(partition.relativePath);
-    }
-    await fsPort.writeFileExclusive(CONFIG_RELATIVE_PATH, serializeRootConfig(config));
-    const templateEntries = DEFAULT_TEMPLATES.map((template) => serializeTemplate(template));
-    for (const entry of templateEntries) {
-      await fsPort.writeFileExclusive(entry.relativePath, entry.content);
-    }
-    const discovered = await discoverTemplates(fsPort);
-    if (discovered.diagnostics.some((item) => item.severity === 'error')) {
-      throw new AppError(ERROR_CODES.VALIDATION_FAILED, '内置模板写入后校验失败。');
-    }
-    await new TemplateIndex(db).sync(rootId, discovered.entries);
-    const check = db.quickCheck();
-    if (!check.ok) {
-      throw new AppError(ERROR_CODES.INTERNAL_ERROR, `数据库完整性检查失败：${check.messages.join('; ')}`);
-    }
-    await journal.transition(payload.plan.operationId, 'applying', 'completed', {
-      completedSteps: [
-        'pm_directory',
-        'database',
-        'partitions',
-        'config',
-        'templates',
-        'template_index',
-        'integrity_check'
-      ]
-    });
-    return {
-      operationId: payload.plan.operationId,
-      state: 'completed',
-      changedPaths: payload.plan.details?.changedPaths || [],
-      requiresWorkspaceSync: false,
-      warnings: [],
-      config
-    };
+    await writeRootBootstrap(fsPort, bootstrap);
+    crashAtBootstrapPoint('bootstrap_marker');
+    return await applyRootBootstrap(bootstrap);
   } catch (error) {
-    if (started && journal) {
-      try {
-        await journal.markNeedsRecovery(payload.plan.operationId, 'applying', error.message);
-      } catch { /* 保留原始错误 */ }
-    }
     const appError = normalizeError(error);
     appError.operationId = payload.plan.operationId;
     throw appError;
-  } finally {
-    if (db) db.close();
   }
 }
 

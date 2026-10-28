@@ -12,6 +12,7 @@ const {
   discoverTemplates,
   withRootContext
 } = require('./context');
+const { ROOT_INIT_MARKER, readRootBootstrap } = require('./root-bootstrap');
 
 /**
  * 只读检查根目录，不创建任何文件。未初始化也返回结构化结果，供 UI 展示。
@@ -39,6 +40,7 @@ async function inspectRoot(input) {
     config: null,
     issues: [],
     incompleteOperations: [],
+    bootstrapOperationId: null,
     templateDiagnostics: [],
     database: { exists: false, quickCheck: 'unknown', schemaVersion: 0, sqliteVersion: 'unknown' }
   };
@@ -58,6 +60,22 @@ async function inspectRoot(input) {
   const entries = await fsPort.listDirectory('');
   base.isEmpty = entries.length === 0;
 
+  const bootstrapInfo = await fsPort.inspect(ROOT_INIT_MARKER);
+  if (bootstrapInfo.exists) {
+    base.partial = true;
+    try {
+      const bootstrap = await readRootBootstrap(fsPort, rootUri);
+      base.bootstrapOperationId = bootstrap.operationId;
+      base.issues.push(issue(
+        'ROOT_INITIALIZATION_INCOMPLETE',
+        '根目录初始化尚未完成，可通过“检查未完成操作”安全恢复。',
+        'warning'
+      ));
+    } catch (error) {
+      base.issues.push(issue('ROOT_INITIALIZATION_MARKER_INVALID', error.message, 'error'));
+    }
+  }
+
   const pmInfo = await fsPort.inspect(PM_DIR);
   if (pmInfo.exists && (pmInfo.isSymlink || pmInfo.type !== 'directory')) {
     base.partial = true;
@@ -67,8 +85,8 @@ async function inspectRoot(input) {
 
   const configInfo = await fsPort.inspect(CONFIG_RELATIVE_PATH);
   if (!configInfo.exists) {
-    base.partial = pmInfo.exists;
-    if (pmInfo.exists) {
+    base.partial = base.partial || pmInfo.exists;
+    if (pmInfo.exists && !bootstrapInfo.exists) {
       base.issues.push(issue('CONFIG_MISSING', '.pm 已存在但缺少 pm.json，可能是中断的初始化。'));
     }
     return base;

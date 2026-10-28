@@ -35,7 +35,7 @@ function fileUri(filePath) {
 /**
  * @param {string} rootDir
  * @param {string} workspaceFile
- * @param {{displayName?: string, requestId?: string}} [options]
+ * @param {{displayName?: string, requestId?: string, env?: Record<string,string>}} [options]
  * @returns {Promise<object>}
  */
 async function planRootInit(rootDir, workspaceFile, options = {}) {
@@ -58,7 +58,7 @@ async function planRootInit(rootDir, workspaceFile, options = {}) {
 /**
  * @param {string} rootDir
  * @param {string} workspaceFile
- * @param {{displayName?: string, requestId?: string}} [options]
+ * @param {{displayName?: string, requestId?: string, env?: Record<string,string>}} [options]
  * @returns {Promise<object>}
  */
 async function initRoot(rootDir, workspaceFile, options = {}) {
@@ -75,7 +75,7 @@ async function initRoot(rootDir, workspaceFile, options = {}) {
       },
       plan
     }
-  });
+  }, { env: options.env });
   if (!response.json?.ok) {
     throw new Error(`root.initialize.execute failed: ${JSON.stringify(response.json || response.stdout)}`);
   }
