@@ -1,0 +1,266 @@
+{
+  "name": "vscode-project-manager",
+  "displayName": "通用项目管理",
+  "description": "面向本地工作区的通用项目管理扩展：可配置管理根、模板化新建项目、工作区同步、搜索与 Markdown 文件模板。",
+  "version": "0.1.0",
+  "publisher": "local-project-manager",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.121.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "icon": "resources/icon.png",
+  "galleryBanner": {
+    "color": "#1c375c",
+    "theme": "dark"
+  },
+  "keywords": [
+    "project",
+    "workspace",
+    "template",
+    "sqlite",
+    "项目管理"
+  ],
+  "activationEvents": [
+    "onView:projectManager.projects",
+    "onCommand:projectManager.initializeRoot",
+    "onCommand:projectManager.createProject",
+    "onCommand:projectManager.searchProjects",
+    "onCommand:projectManager.applyFileTemplate",
+    "onCommand:projectManager.syncPending",
+    "onCommand:projectManager.recoverOperations",
+    "onCommand:projectManager.archiveProject",
+    "onCommand:projectManager.refresh"
+  ],
+  "main": "./src/extension/extension.js",
+  "extensionKind": [
+    "workspace"
+  ],
+  "capabilities": {
+    "virtualWorkspaces": false,
+    "untrustedWorkspaces": {
+      "supported": false
+    }
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "projectManager.initializeRoot",
+        "title": "初始化管理根",
+        "category": "项目管理"
+      },
+      {
+        "command": "projectManager.createProject",
+        "title": "新建项目",
+        "category": "项目管理",
+        "icon": "$(add)"
+      },
+      {
+        "command": "projectManager.searchProjects",
+        "title": "搜索项目",
+        "category": "项目管理",
+        "icon": "$(search)"
+      },
+      {
+        "command": "projectManager.applyFileTemplate",
+        "title": "应用 Markdown 文件模板",
+        "category": "项目管理"
+      },
+      {
+        "command": "projectManager.syncPending",
+        "title": "完成待同步项目",
+        "category": "项目管理"
+      },
+      {
+        "command": "projectManager.recoverOperations",
+        "title": "检查未完成操作",
+        "category": "项目管理"
+      },
+      {
+        "command": "projectManager.archiveProject",
+        "title": "归档项目",
+        "category": "项目管理"
+      },
+      {
+        "command": "projectManager.refresh",
+        "title": "刷新项目列表",
+        "category": "项目管理",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "projectManager.openProject",
+        "title": "在资源管理器中显示项目",
+        "category": "项目管理"
+      },
+      {
+        "command": "projectManager.copyProjectInfo",
+        "title": "复制项目信息",
+        "category": "项目管理"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "projectManager",
+          "title": "项目管理",
+          "icon": "resources/activity.svg"
+        }
+      ]
+    },
+    "views": {
+      "projectManager": [
+        {
+          "id": "projectManager.projects",
+          "name": "项目",
+          "contextualTitle": "通用项目管理"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "projectManager.projects",
+        "contents": "尚未初始化管理根。\n[初始化管理根](command:projectManager.initializeRoot)\n初始化后，可在此处查看、搜索和新建项目。"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "projectManager.createProject",
+          "when": "view == projectManager.projects",
+          "group": "navigation@1"
+        },
+        {
+          "command": "projectManager.searchProjects",
+          "when": "view == projectManager.projects",
+          "group": "navigation@2"
+        },
+        {
+          "command": "projectManager.refresh",
+          "when": "view == projectManager.projects",
+          "group": "navigation@3"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "projectManager.openProject",
+          "when": "view == projectManager.projects && viewItem == pmProject",
+          "group": "inline@1"
+        },
+        {
+          "command": "projectManager.copyProjectInfo",
+          "when": "view == projectManager.projects && viewItem == pmProject",
+          "group": "1_info@1"
+        },
+        {
+          "command": "projectManager.archiveProject",
+          "when": "view == projectManager.projects && viewItem == pmProject",
+          "group": "2_maintenance@1"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "通用项目管理",
+      "properties": {
+        "projectManager.nodePath": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "运行 CLI 的 Node 可执行文件路径。留空时自动使用 VS Code 内置 Node（`ELECTRON_RUN_AS_NODE`），再回退到 PATH 中的 `node`。要求 Node >= 22.13。"
+        },
+        "projectManager.requestTimeoutMs": {
+          "type": "number",
+          "default": 120000,
+          "minimum": 5000,
+          "maximum": 600000,
+          "description": "单次 CLI 请求的超时时间（毫秒）。"
+        },
+        "projectManager.maxSearchResults": {
+          "type": "number",
+          "default": 100,
+          "minimum": 1,
+          "maximum": 500,
+          "description": "项目搜索结果的最大返回条数。"
+        },
+        "projectManager.partitions": {
+          "type": "array",
+          "default": [
+            {
+              "id": "inbox",
+              "name": "收件箱",
+              "relativePath": "inbox"
+            },
+            {
+              "id": "projects",
+              "name": "项目",
+              "relativePath": "projects"
+            },
+            {
+              "id": "archive",
+              "name": "归档",
+              "relativePath": "archive"
+            }
+          ],
+          "description": "初始化管理根时创建的分区。必须是 inbox、projects、archive 各一项；路径为根内相对路径。",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "name",
+              "relativePath"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "enum": [
+                  "inbox",
+                  "projects",
+                  "archive"
+                ]
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40
+              },
+              "relativePath": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "projectManager.slugRules": {
+          "type": "object",
+          "default": {
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "maxLength": 64,
+            "lowercase": true
+          },
+          "description": "项目目录 slug 规则。pattern 为正则，maxLength 为最大长度。",
+          "properties": {
+            "pattern": {
+              "type": "string"
+            },
+            "maxLength": {
+              "type": "number",
+              "minimum": 8,
+              "maximum": 120
+            },
+            "lowercase": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    }
+  },
+  "scripts": {
+    "check": "node scripts/check.js",
+    "test": "node --test --test-isolation=none tests/**/*.test.js",
+    "verify": "npm run check && npm test",
+    "package": "npm run check && node scripts/package-vsix.js",
+    "package:vsce": "npx --yes @vscode/vsce package --no-dependencies",
+    "vscode:prepublish": "npm run check"
+  }
+}

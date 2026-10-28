@@ -1,0 +1,8 @@
+{
+  "folders": [],
+  "settings": {
+    "files.exclude": {
+      "**/.pm": true
+    }
+  }
+}

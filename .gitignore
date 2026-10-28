@@ -5,6 +5,7 @@ discuss/
 node_modules/
 .vscode-test/
 coverage/
+dist/
 *.vsix
 
 # 项目管理插件在被管理根目录创建的本地状态。
