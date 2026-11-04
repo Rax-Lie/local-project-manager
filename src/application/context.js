@@ -18,6 +18,7 @@ const { SqliteDatabase } = require('../adapters/sqlite/database');
 const { ProjectRepository } = require('../adapters/sqlite/project-repository');
 const { OperationJournal } = require('../adapters/sqlite/operation-journal');
 const { TemplateIndex } = require('../adapters/sqlite/template-index');
+const { StagingIndex } = require('../adapters/sqlite/staging-index');
 
 const CONFIG_RELATIVE_PATH = `${PM_DIR}/${CONFIG_FILE}`;
 const DB_RELATIVE_PATH = `${PM_DIR}/${DB_FILE}`;
@@ -156,6 +157,7 @@ async function openRootContext(rootUri, options = {}) {
       repo: new ProjectRepository(db),
       journal: new OperationJournal(db),
       templateIndex: new TemplateIndex(db),
+      stagingIndex: new StagingIndex(db),
       close() { db.close(); }
     };
     return center;

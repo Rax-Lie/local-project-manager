@@ -141,7 +141,8 @@ async function applyRootBootstrap(record) {
 async function assertBootstrapDatabase(db, journal, record) {
   const tables = db.all("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
     .map((row) => row.name);
-  if (tables.some((name) => !['templates', 'projects', 'operations'].includes(name))) {
+  const expectedTables = ['templates', 'projects', 'operations', 'staging_suggestions'];
+  if (tables.some((name) => !expectedTables.includes(name))) {
     throw new AppError(ERROR_CODES.RECOVERY_REQUIRED, '数据库包含初始化计划之外的数据表，已停止自动恢复。');
   }
   const existing = await journal.get(record.operationId);
@@ -152,7 +153,7 @@ async function assertBootstrapDatabase(db, journal, record) {
     }
     return;
   }
-  const counts = ['templates', 'projects', 'operations'].map((table) => Number(
+  const counts = expectedTables.map((table) => Number(
     db.get(`SELECT COUNT(*) AS count FROM ${table}`).count
   ));
   if (counts.some((count) => count !== 0)) {

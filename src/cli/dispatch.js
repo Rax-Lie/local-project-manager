@@ -41,6 +41,7 @@ const {
   executeFileTemplate
 } = require('../application/file-template-service');
 const { inspectRecovery } = require('../application/recovery-service');
+const { scanStaging, decideStagingSuggestion } = require('../application/staging/staging-service');
 
 const CLI_VERSION = require('../../package.json').version;
 
@@ -87,6 +88,10 @@ async function dispatch(operation, payload) {
       return planRestore(payload);
     case 'project.restore.execute':
       return executeRestore(payload);
+    case 'project.stage.scan':
+      return scanStaging(payload);
+    case 'project.stage.decide':
+      return decideStagingSuggestion(payload);
     case 'project.file.plan':
       return planFileTemplate(payload);
     case 'project.file.execute':

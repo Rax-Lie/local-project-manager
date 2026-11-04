@@ -121,10 +121,11 @@ function isValidDate(value) {
  * @param {object} vscode
  * @returns {Promise<string|undefined>}
  */
-async function askProjectName(vscode) {
+async function askProjectName(vscode, initialValue = '') {
   const value = await vscode.window.showInputBox({
     title: '项目名称',
     prompt: '用于工作区显示名称；目录 slug 将根据该名称生成，纯中文名称会得到稳定的哈希 slug。',
+    value: initialValue,
     placeHolder: '例如：客户门户改版',
     validateInput: (input) => {
       if (!input || !input.trim()) return '项目名称不能为空。';

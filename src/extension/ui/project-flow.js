@@ -10,10 +10,10 @@ const { askProjectFields, askProjectName } = require('./project-form');
 /**
  * @param {{vscode: object, cli: object, provider: object, workspaceAdapter: object}} deps
  */
-async function createProjectFlow(deps) {
+async function createProjectFlow(deps, options = {}) {
   const { vscode, cli, provider, workspaceAdapter } = deps;
   if (provider.roots.length === 0) await provider.refresh();
-  const root = await pickRoot(vscode, provider, '选择要在其中新建项目的管理根');
+  const root = options.root || await pickRoot(vscode, provider, '选择要在其中新建项目的管理根');
   if (!root) return;
   assertWorkspace(vscode, root);
   const rootUri = root.rootUri;
@@ -37,7 +37,7 @@ async function createProjectFlow(deps) {
   if (!pickedTemplate) return;
   const template = pickedTemplate.template;
 
-  const displayName = await askProjectName(vscode);
+  const displayName = await askProjectName(vscode, options.displayName || '');
   if (displayName === undefined) return;
   const fieldValues = await askProjectFields(vscode, template);
   if (fieldValues === undefined) return;
@@ -88,11 +88,11 @@ async function createProjectFlow(deps) {
       `项目目录已创建，但加入工作区失败：${syncError.message}`,
       { modal: false, detail: '项目处于“待同步”状态。修复工作区后运行“完成待同步项目”，不会删除已创建内容。' }
     );
-    return;
+    return { project, operationId: result.operationId };
   }
   if (stillPending) {
     await vscode.window.showWarningMessage('项目目录已创建，但工作区尚未观察到新文件夹。请运行“完成待同步项目”。');
-    return;
+    return { project, operationId: result.operationId };
   }
   const absolute = project.relativePath && root.inspection
     ? path.join(root.inspection.rootPath, ...project.relativePath.split('/'))
@@ -106,6 +106,7 @@ async function createProjectFlow(deps) {
   } else if (choice === '应用 Markdown 模板') {
     await vscode.commands.executeCommand('projectManager.applyFileTemplate');
   }
+  return { project, operationId: result.operationId };
 }
 
 /**

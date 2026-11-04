@@ -23,6 +23,8 @@ const OPERATIONS = Object.freeze([
   'project.archive.execute',
   'project.restore.plan',
   'project.restore.execute',
+  'project.stage.scan',
+  'project.stage.decide',
   'project.file.plan',
   'project.file.execute',
   'operation.recover'

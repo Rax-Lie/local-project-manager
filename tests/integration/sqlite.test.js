@@ -7,12 +7,13 @@ const path = require('node:path');
 const { SqliteDatabase, loadSqlite } = require('../../src/adapters/sqlite/database');
 const { makeTempDir, removeAll } = require('../helpers/temp');
 
-test('SQLite schema v1、外键和完整性检查可用', async (t) => {
+test('SQLite schema v2、暂存索引、外键和完整性检查可用', async (t) => {
   const temp = await makeTempDir();
   t.after(() => removeAll([temp]));
   const db = new SqliteDatabase(path.join(temp, 'pm.sqlite'));
   await db.open();
-  assert.equal(db.version, 1);
+  assert.equal(db.version, 2);
+  assert.ok(db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='staging_suggestions'"));
   assert.equal(db.quickCheck().ok, true);
   assert.match(db.sqliteVersion(), /^\d+\.\d+/);
   const foreignKeys = db.get('PRAGMA foreign_keys');
@@ -22,6 +23,23 @@ test('SQLite schema v1、外键和完整性检查可用', async (t) => {
     ['prj_x', 'root_x', 'missing']
   ), (error) => error.code === 'INTERNAL_ERROR' || error.code === 'CONFLICT');
   db.close();
+});
+
+test('schema v1 数据库备份后迁移到 v2 暂存索引', async (t) => {
+  const temp = await makeTempDir();
+  t.after(() => removeAll([temp]));
+  const dbPath = path.join(temp, 'pm.sqlite');
+  const original = new SqliteDatabase(dbPath);
+  await original.open();
+  original.exec('DROP TABLE staging_suggestions');
+  original.exec('PRAGMA user_version = 1');
+  original.close();
+  const migrated = new SqliteDatabase(dbPath);
+  await migrated.open();
+  assert.equal(migrated.version, 2);
+  assert.ok(migrated.quickCheck().ok);
+  assert.ok(migrated.get("SELECT name FROM sqlite_master WHERE type='table' AND name='staging_suggestions'"));
+  migrated.close();
 });
 
 test('未来 schema 版本被拒绝且原数据库保留', async (t) => {

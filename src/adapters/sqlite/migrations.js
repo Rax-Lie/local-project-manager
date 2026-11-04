@@ -54,10 +54,32 @@ const MIGRATIONS = Object.freeze([
       `CREATE INDEX IF NOT EXISTS idx_operations_root_state
         ON operations(root_id, state)`
     ]
+  },
+  {
+    version: 2,
+    statements: [
+      `CREATE TABLE IF NOT EXISTS staging_suggestions (
+        root_id TEXT NOT NULL,
+        candidate_id TEXT NOT NULL,
+        scan_root TEXT NOT NULL,
+        source_path TEXT NOT NULL,
+        display_name TEXT NOT NULL,
+        score INTEGER NOT NULL CHECK (score BETWEEN 0 AND 100),
+        reasons TEXT NOT NULL,
+        decision TEXT NOT NULL CHECK (decision IN ('pending','ignored','accepted')),
+        project_id TEXT,
+        scanned_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY (root_id, candidate_id),
+        FOREIGN KEY (project_id) REFERENCES projects(project_id)
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_staging_root_decision
+        ON staging_suggestions(root_id, decision, score DESC)`
+    ]
   }
 ]);
 
-const SUPPORTED_SCHEMA_VERSION = 1;
+const SUPPORTED_SCHEMA_VERSION = 2;
 
 module.exports = {
   MIGRATIONS,
