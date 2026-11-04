@@ -18,6 +18,7 @@ const {
 const { applyFileTemplateFlow } = require('./ui/file-flow');
 const { restoreProjectFlow } = require('./ui/restore-flow');
 const { stagingSuggestionsFlow } = require('./staging/suggestions-flow');
+const { checkMarkdownLinksFlow } = require('./markdown/check-flow');
 const { searchProjectsFlow, copyProjectInfoFlow } = require('./ui/search-flow');
 const { manageTemplatesFlow, saveTemplateDraftFlow } = require('./ui/template-flow');
 
@@ -88,6 +89,7 @@ function activate(context) {
   register('projectManager.archiveProject', (item) => archiveProjectFlow(flows, item));
   register('projectManager.restoreProject', (item) => restoreProjectFlow(flows, item));
   register('projectManager.stagingSuggestions', () => stagingSuggestionsFlow(flows));
+  register('projectManager.checkMarkdownLinks', () => checkMarkdownLinksFlow(vscode));
   register('projectManager.refresh', async () => {
     await provider.refresh();
     updateStatus();

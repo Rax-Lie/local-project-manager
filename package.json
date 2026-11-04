@@ -36,6 +36,7 @@
     "onCommand:projectManager.archiveProject",
     "onCommand:projectManager.restoreProject",
     "onCommand:projectManager.stagingSuggestions",
+    "onCommand:projectManager.checkMarkdownLinks",
     "onCommand:projectManager.refresh"
   ],
   "main": "./src/extension/extension.js",
@@ -109,6 +110,11 @@
         "category": "项目管理"
       },
       {
+        "command": "projectManager.checkMarkdownLinks",
+        "title": "检查 Markdown 本地链接",
+        "category": "项目管理"
+      },
+      {
         "command": "projectManager.refresh",
         "title": "刷新项目列表",
         "category": "项目管理",
@@ -175,6 +181,11 @@
           "command": "projectManager.stagingSuggestions",
           "when": "view == projectManager.projects",
           "group": "navigation@5"
+        },
+        {
+          "command": "projectManager.checkMarkdownLinks",
+          "when": "editorLangId == markdown",
+          "group": "navigation@6"
         }
       ],
       "view/item/context": [
