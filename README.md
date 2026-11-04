@@ -179,6 +179,23 @@ npm run verify    # check + test
 npm run package   # 使用仓库内打包器生成 VSIX，无第三方打包依赖
 ```
 
+## Marketplace 自动发布
+
+仓库中的 `.github/workflows/publish-extension.yml` 在推送 `v<版本号>` 标签时运行 Windows CI：先执行 `npm run verify`，检查标签与 `package.json` 版本一致，再通过 Marketplace Trusted Publishing（OIDC）发布。该流程不保存长期发布令牌，也不会因普通分支推送而发布。
+
+首次启用前：
+
+1. 在 Visual Studio Marketplace 创建 Publisher，并将 `package.json` 的 `publisher` 占位值改为实际 Publisher ID。
+2. 在 Publisher 管理页新增 Trusted Publishing policy：Repository owner 填 `Rax-Lie`，Repository 填 `local-project-manager`，Workflow 填 `publish-extension.yml`；此工作流不使用 GitHub Environment，因此 Environment 留空。
+3. 将配置提交并推送到 `main`。准备发行版时，更新 `package.json` 的版本和 `CHANGELOG.md`，先运行 `npm run verify` 并提交到 `main`，然后创建匹配版本的标签，例如 `v0.1.1`，再推送该标签：
+
+   ```powershell
+   git tag v0.1.1
+   git push origin v0.1.1
+   ```
+
+版本标签必须与清单版本完全匹配，例如标签 `v0.1.1` 对应 `"version": "0.1.1"`。工作流使用官方 `@vscode/vsce` 发布；仓库现有的 `npm run package` 仍用于本地 VSIX 打包和试装。
+
 测试使用临时目录和合成的 `.code-workspace`，覆盖根初始化及 16 个崩溃边界恢复、项目创建、模板 CRUD/版本冲突、搜索分页、文件模板、归档与恢复、暂存扫描/迁移/决策持久化、Markdown 本地链接边界、协议边界、路径/slug 规则以及 WorkspaceAdapter 测试替身；当前共 108 项测试通过。
 
 CLI 协议：stdin 一个 UTF-8 JSON 请求，stdout 一条 JSON 响应，诊断写 stderr；协议版本、请求 ID、请求/响应字节上限、退出码和错误码均在两端校验。完整协议与数据流见仓库中的 `docs/整体开发指南.md`。

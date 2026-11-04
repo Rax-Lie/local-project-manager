@@ -1,0 +1,38 @@
+name: Publish VS Code extension
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check tag matches extension version
+        shell: pwsh
+        run: |
+          $expectedTag = "v$(node -p "require('./package.json').version")"
+          if ($env:GITHUB_REF_NAME -ne $expectedTag) {
+            throw "Tag '$env:GITHUB_REF_NAME' must match package version '$expectedTag'."
+          }
+
+      - name: Verify project
+        run: npm run verify
+
+      - name: Publish to Visual Studio Marketplace
+        run: npx --yes @vscode/vsce publish --oidc

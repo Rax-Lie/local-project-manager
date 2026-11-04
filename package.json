@@ -2,6 +2,10 @@
   "name": "vscode-project-manager",
   "displayName": "通用项目管理",
   "description": "面向本地工作区的通用项目管理扩展：可配置管理根、模板化新建项目、工作区同步、搜索与 Markdown 文件模板。",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Rax-Lie/local-project-manager.git"
+  },
   "version": "0.1.0",
   "publisher": "local-project-manager",
   "license": "MIT",
