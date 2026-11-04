@@ -53,10 +53,57 @@ async function completeWorkspaceSync(payload) {
       });
     }
     if (action === 'add') {
+      if (operation.kind === 'project.restore') {
+        return completeRestore(context, payload, operation, project);
+      }
       return completeCreate(context, payload, operation, project);
     }
     return completeArchive(context, payload, operation, project);
   });
+}
+
+async function completeRestore(context, payload, operation, project) {
+  if (operation.state !== 'awaiting_workspace') {
+    throw new AppError(ERROR_CODES.OPERATION_INCOMPLETE, `操作当前状态为 ${operation.state}。`);
+  }
+  if (!operation.targetRelativePath || project.relativePath !== operation.targetRelativePath) {
+    throw new AppError(ERROR_CODES.RECOVERY_REQUIRED, '恢复操作目标路径与项目台账不一致。');
+  }
+  const targetPath = toAbsolute(context.rootPath, operation.targetRelativePath);
+  if (typeof payload.targetUri === 'string' && !sameFileUri(payload.targetUri, pathToFileUri(targetPath))) {
+    throw new AppError(ERROR_CODES.VALIDATION_FAILED, 'targetUri 与恢复后的项目路径不一致。');
+  }
+  const info = await context.fs.inspect(operation.targetRelativePath);
+  if (!info.exists || info.type !== 'directory') {
+    throw new AppError(ERROR_CODES.RECOVERY_REQUIRED, '恢复后的项目目录缺失。');
+  }
+  if (!payload.observedPresent) {
+    return {
+      operationId: operation.operationId,
+      state: 'awaiting_workspace',
+      changedPaths: [],
+      requiresWorkspaceSync: true,
+      warnings: [{ code: 'WORKSPACE_FOLDER_MISSING', severity: 'warning', message: '工作区中尚未观察到恢复的项目文件夹。' }],
+      project: projectSummary(project)
+    };
+  }
+  let updated = project;
+  if (project.status !== 'active') {
+    assertProjectStatusTransition(project.status, 'active');
+    updated = { ...project, status: 'active', updatedAt: nowIso() };
+    await context.repo.update(updated, project.updatedAt);
+  }
+  await context.journal.transition(operation.operationId, 'awaiting_workspace', 'completed', {
+    completedSteps: ['workspace_folder_observed', 'project_active']
+  });
+  return {
+    operationId: operation.operationId,
+    state: 'completed',
+    changedPaths: [],
+    requiresWorkspaceSync: false,
+    warnings: [],
+    project: projectSummary(updated)
+  };
 }
 
 /**

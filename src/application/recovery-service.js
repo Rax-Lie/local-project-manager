@@ -9,10 +9,7 @@ const { withRootContext } = require('./context');
 const { assertRootId } = require('./template-service');
 const { inspectRoot } = require('./root-inspect');
 const { recoverRootBootstrap } = require('./root-bootstrap-recovery');
-/**
- * @param {unknown} payload
- * @returns {Promise<object>}
- */
+const { reportRestore } = require('./restore-recovery');
 async function inspectRecovery(payload) {
   if (!isPlainObject(payload)) {
     throw new AppError(ERROR_CODES.VALIDATION_FAILED, '恢复检查输入必须是对象。');
@@ -103,6 +100,8 @@ async function buildReport(context, operation, apply) {
     await reportFileWrite(context, operation, report, apply);
   } else if (operation.kind === 'project.archive') {
     await reportArchive(context, operation, project, report, apply);
+  } else if (operation.kind === 'project.restore') {
+    await reportRestore(context, operation, project, report, apply);
   } else if (operation.kind === 'root.initialize') {
     await reportRootInit(context, operation, report, apply);
   } else {

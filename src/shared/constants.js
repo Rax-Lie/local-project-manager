@@ -54,6 +54,7 @@ const OPERATION_KINDS = Object.freeze([
   'root.initialize',
   'project.create',
   'project.archive',
+  'project.restore',
   'project.file.write'
 ]);
 

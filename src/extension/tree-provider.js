@@ -215,7 +215,8 @@ class ProjectTreeProvider {
     if (element.kind === 'project') {
       const item = new this.vscode.TreeItem(element.label, this.vscode.TreeItemCollapsibleState.None);
       item.description = element.description;
-      item.contextValue = 'pmProject';
+      item.contextValue = element.project.status === 'archived' ? 'pmProjectArchived'
+        : element.project.status === 'active' ? 'pmProjectActive' : 'pmProject';
       item.iconPath = iconForProject(this.vscode, element.project.status);
       item.command = {
         command: 'projectManager.openProject',

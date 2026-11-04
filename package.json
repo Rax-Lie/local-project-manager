@@ -34,6 +34,7 @@
     "onCommand:projectManager.syncPending",
     "onCommand:projectManager.recoverOperations",
     "onCommand:projectManager.archiveProject",
+    "onCommand:projectManager.restoreProject",
     "onCommand:projectManager.refresh"
   ],
   "main": "./src/extension/extension.js",
@@ -94,6 +95,11 @@
       {
         "command": "projectManager.archiveProject",
         "title": "归档项目",
+        "category": "项目管理"
+      },
+      {
+        "command": "projectManager.restoreProject",
+        "title": "恢复归档项目",
         "category": "项目管理"
       },
       {
@@ -173,7 +179,12 @@
         },
         {
           "command": "projectManager.archiveProject",
-          "when": "view == projectManager.projects && viewItem == pmProject",
+          "when": "view == projectManager.projects && viewItem == pmProjectActive",
+          "group": "2_maintenance@1"
+        },
+        {
+          "command": "projectManager.restoreProject",
+          "when": "view == projectManager.projects && viewItem == pmProjectArchived",
           "group": "2_maintenance@1"
         }
       ]

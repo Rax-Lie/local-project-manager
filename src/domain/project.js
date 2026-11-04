@@ -24,7 +24,7 @@ const STATUS_TRANSITIONS = Object.freeze({
   provisioning: Object.freeze(['active', 'needs_recovery']),
   active: Object.freeze(['archiving', 'needs_recovery']),
   archiving: Object.freeze(['archived', 'needs_recovery']),
-  archived: Object.freeze([]),
+  archived: Object.freeze(['active', 'needs_recovery']),
   needs_recovery: Object.freeze(['provisioning', 'active', 'archiving', 'archived'])
 });
 

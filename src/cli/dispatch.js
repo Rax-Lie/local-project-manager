@@ -33,6 +33,10 @@ const {
   executeArchive
 } = require('../application/archive-service');
 const {
+  planRestore,
+  executeRestore
+} = require('../application/restore-service');
+const {
   planFileTemplate,
   executeFileTemplate
 } = require('../application/file-template-service');
@@ -79,6 +83,10 @@ async function dispatch(operation, payload) {
       return planArchive(payload);
     case 'project.archive.execute':
       return executeArchive(payload);
+    case 'project.restore.plan':
+      return planRestore(payload);
+    case 'project.restore.execute':
+      return executeRestore(payload);
     case 'project.file.plan':
       return planFileTemplate(payload);
     case 'project.file.execute':

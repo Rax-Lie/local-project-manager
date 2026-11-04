@@ -21,6 +21,8 @@ const OPERATIONS = Object.freeze([
   'project.search',
   'project.archive.plan',
   'project.archive.execute',
+  'project.restore.plan',
+  'project.restore.execute',
   'project.file.plan',
   'project.file.execute',
   'operation.recover'

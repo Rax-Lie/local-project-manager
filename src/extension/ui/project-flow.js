@@ -140,7 +140,7 @@ async function syncPendingFlow(deps) {
   for (const operation of applied.operations || []) {
     if (operation.state === 'completed') continue;
     try {
-      if (operation.kind === 'project.create'
+      if (['project.create', 'project.restore'].includes(operation.kind)
         && operation.state === 'awaiting_workspace'
         && operation.project?.relativePath) {
         const targetPath = path.join(root.inspection.rootPath, ...operation.project.relativePath.split('/'));

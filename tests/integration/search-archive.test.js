@@ -194,3 +194,66 @@ test('归档目标已存在时计划阻塞且执行被拒绝', async (t) => {
   assert.equal(execute.json.error.code, 'CONFLICT');
   assert.ok((await fs.stat(path.join(root, ...project.relativePath.split('/')))).isDirectory());
 });
+
+test('project.restore 将归档项目安全移回项目分区并重新同步工作区', async (t) => {
+  const { root, rootId, created } = await setup(t);
+  const project = created[0];
+  const input = { rootUri: fileUri(root), rootId, projectId: project.projectId };
+  const archivedPlan = await runCli({
+    protocolVersion: 1, requestId: 'restore-archive-plan', operation: 'project.archive.plan', payload: input
+  });
+  const archived = await runCli({
+    protocolVersion: 1, requestId: 'restore-archive', operation: 'project.archive.execute',
+    payload: { input: { ...input, targetPartitionId: 'archive' }, plan: archivedPlan.json.data }
+  });
+  assert.equal(archived.json.ok, true, archived.stdout);
+  const archiveDone = await runCli({
+    protocolVersion: 1, requestId: 'restore-archive-done', operation: 'project.workspace.complete',
+    payload: { rootUri: input.rootUri, rootId, operationId: archived.json.data.operationId, observedPresent: false, action: 'remove',
+      targetUri: archived.json.data.workspaceSync.targetUri }
+  });
+  assert.equal(archiveDone.json.ok, true, archiveDone.stdout);
+  assert.equal(archiveDone.json.data.project.status, 'archived');
+
+  const plan = await runCli({ protocolVersion: 1, requestId: 'restore-plan', operation: 'project.restore.plan', payload: input });
+  assert.equal(plan.json.ok, true, plan.stdout);
+  assert.equal(plan.json.data.details.targetRelativePath, project.relativePath);
+  const restored = await runCli({
+    protocolVersion: 1, requestId: 'restore-execute', operation: 'project.restore.execute',
+    payload: { input, plan: plan.json.data }
+  });
+  assert.equal(restored.json.ok, true, restored.stdout);
+  assert.equal(restored.json.data.state, 'awaiting_workspace');
+  assert.equal(restored.json.data.workspaceSync.action, 'add');
+  await assert.rejects(fs.stat(path.join(root, 'archive', project.slug)));
+  assert.ok((await fs.stat(path.join(root, ...project.relativePath.split('/')))).isDirectory());
+
+  const completed = await runCli({
+    protocolVersion: 1, requestId: 'restore-complete', operation: 'project.workspace.complete',
+    payload: { rootUri: input.rootUri, rootId, operationId: restored.json.data.operationId, observedPresent: true, action: 'add',
+      targetUri: restored.json.data.workspaceSync.targetUri }
+  });
+  assert.equal(completed.json.ok, true, completed.stdout);
+  assert.equal(completed.json.data.project.status, 'active');
+});
+
+test('恢复目标冲突时不移动归档内容', async (t) => {
+  const { root, rootId, created } = await setup(t);
+  const project = created[0];
+  const input = { rootUri: fileUri(root), rootId, projectId: project.projectId };
+  const archivePlan = await runCli({ protocolVersion: 1, requestId: 'restore-conflict-archive-plan',
+    operation: 'project.archive.plan', payload: input });
+  const archived = await runCli({ protocolVersion: 1, requestId: 'restore-conflict-archive',
+    operation: 'project.archive.execute', payload: { input: { ...input, targetPartitionId: 'archive' }, plan: archivePlan.json.data } });
+  assert.equal(archived.json.ok, true, archived.stdout);
+  const archiveDone = await runCli({ protocolVersion: 1, requestId: 'restore-conflict-archive-done', operation: 'project.workspace.complete',
+    payload: { rootUri: input.rootUri, rootId, operationId: archived.json.data.operationId, observedPresent: false, action: 'remove',
+      targetUri: archived.json.data.workspaceSync.targetUri } });
+  assert.equal(archiveDone.json.ok, true, archiveDone.stdout);
+  await fs.mkdir(path.join(root, ...project.relativePath.split('/')), { recursive: true });
+  const response = await runCli({ protocolVersion: 1, requestId: 'restore-conflict-plan',
+    operation: 'project.restore.plan', payload: input });
+  assert.equal(response.json.ok, true, response.stdout);
+  assert.equal(response.json.data.details.conflict, true);
+  assert.ok((await fs.stat(path.join(root, 'archive', project.slug))).isDirectory());
+});
